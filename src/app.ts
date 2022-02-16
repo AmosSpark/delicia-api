@@ -6,6 +6,8 @@ import helmet from "helmet";
 import mongoSanitize from "express-mongo-sanitize";
 import xss from "xss-clean";
 
+import { usersRouter } from "@/resources/routes";
+
 // Application Variables
 
 const app = express();
@@ -29,5 +31,6 @@ app.use(express.urlencoded({ extended: false }));
 app.get("/delecia", (req: Request, res: Response) => {
   res.send(`<h3>Welcome to Delicia!</h3>`);
 });
+app.use("/api/v1", usersRouter);
 
 export { app };
