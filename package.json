@@ -45,7 +45,7 @@
     "@types/morgan": "^1.9.3"
   },
   "engines": {
-    "node": "16.x",
-    "npm": "7.x"
+    "node": "16.0.0",
+    "npm": "7.10.0"
   }
 }
