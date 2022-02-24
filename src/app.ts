@@ -6,7 +6,7 @@ import helmet from "helmet";
 import mongoSanitize from "express-mongo-sanitize";
 import xss from "xss-clean";
 
-import { usersRouter, itemsRouter } from "@/resources/routes";
+import { usersRouter, itemsRouter, ordersRouter } from "@/resources/routes";
 
 // Application Variables
 
@@ -33,5 +33,6 @@ app.get("/delecia", (req: Request, res: Response) => {
 });
 app.use("/api/v1", usersRouter);
 app.use("/api/v1/items", itemsRouter);
+app.use("/api/v1/orders", ordersRouter);
 
 export { app };

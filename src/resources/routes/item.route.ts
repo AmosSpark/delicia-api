@@ -9,6 +9,7 @@ import {
   deleteAll,
 } from "@/resources/controllers/item.controller";
 
+import { ordersRouter } from "@/resources/routes/order.route";
 import { protectRoute } from "@/resources/controllers/auth.controller";
 
 const itemsRouter = Router() as Express;
@@ -24,5 +25,8 @@ itemsRouter
   .get(getAnItem)
   .patch(protectRoute, updateAnItem)
   .delete(protectRoute, deleteAnItem);
+
+// /api/v1/items/:itemId/orders
+itemsRouter.use("/:id/orders", protectRoute, ordersRouter);
 
 export { itemsRouter };
