@@ -10,6 +10,7 @@ import {
 } from "@/resources/controllers/item.controller";
 
 import { ordersRouter } from "@/resources/routes/order.route";
+import { reviewsRouter } from "@/resources/routes/review.route";
 import { protectRoute } from "@/resources/controllers/auth.controller";
 
 const itemsRouter = Router() as Express;
@@ -28,5 +29,8 @@ itemsRouter
 
 // /api/v1/items/:itemId/orders
 itemsRouter.use("/:id/orders", protectRoute, ordersRouter);
+
+// /api/v1/items/:itemId/reviews
+itemsRouter.use("/:id/reviews", protectRoute, reviewsRouter);
 
 export { itemsRouter };
