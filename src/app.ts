@@ -5,8 +5,14 @@ import cors from "cors";
 import helmet from "helmet";
 import mongoSanitize from "express-mongo-sanitize";
 import xss from "xss-clean";
+import compression from "compression";
 
-import { usersRouter, itemsRouter } from "@/resources/routes";
+import {
+  usersRouter,
+  itemsRouter,
+  ordersRouter,
+  reviewsRouter,
+} from "@/resources/routes";
 
 // Application Variables
 
@@ -25,6 +31,8 @@ app.use(mongoSanitize());
 // Data sanitization against xss
 app.use(xss());
 
+app.use(compression());
+
 app.use(express.urlencoded({ extended: false }));
 
 // routes
@@ -33,5 +41,7 @@ app.get("/delecia", (req: Request, res: Response) => {
 });
 app.use("/api/v1", usersRouter);
 app.use("/api/v1/items", itemsRouter);
+app.use("/api/v1/orders", ordersRouter);
+app.use("/api/v1/reviews", reviewsRouter);
 
 export { app };
