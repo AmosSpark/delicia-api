@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 
-import HttpException from "@/utils/exceptions/http.exception";
+import catchAsync from "@/utils/catch-async.utils";
+import AppError from "@/utils/app-error.utils";
 import User from "@/resources/models/user.model";
 
 /*
@@ -9,8 +10,8 @@ import User from "@/resources/models/user.model";
  * @ascess private
  */
 
-const getAllUser = async (req: Request, res: Response, next: NextFunction) => {
-  try {
+const getAllUser = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
     const users = await User.find();
     return res.status(200).json({
       status: `success`,
@@ -19,10 +20,8 @@ const getAllUser = async (req: Request, res: Response, next: NextFunction) => {
         users,
       },
     });
-  } catch (error: any) {
-    next(new HttpException(400, error.message));
   }
-};
+);
 
 /*
  * @route GET api/v1/users/:id
@@ -30,8 +29,8 @@ const getAllUser = async (req: Request, res: Response, next: NextFunction) => {
  * @ascess private
  */
 
-const getAuser = async (req: Request, res: Response, next: NextFunction) => {
-  try {
+const getAuser = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
     const id = req.params.id;
     const user: any = await User.findById(id).populate({
       path: "cart",
@@ -41,10 +40,7 @@ const getAuser = async (req: Request, res: Response, next: NextFunction) => {
     });
 
     if (!user) {
-      res.status(404).json({
-        status: `fail`,
-        message: `User with ID: ${req.params.id} not found`,
-      });
+      return next(new AppError(`User with 'id': ${id} not found`, 404));
     }
 
     return res.status(200).json({
@@ -53,10 +49,8 @@ const getAuser = async (req: Request, res: Response, next: NextFunction) => {
         user,
       },
     });
-  } catch (error: any) {
-    next(new HttpException(400, error.message));
   }
-};
+);
 
 /*
  * @route GET api/v1/me
@@ -72,31 +66,27 @@ const getMe = async (req: Request, res: Response, next: NextFunction) => {};
  * @ascess private
  */
 
-const updateAuser = async (req: Request, res: Response, next: NextFunction) => {
-  try {
+const updateAuser = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
     const id = req.params.id,
       body = req.body;
-    const userUpdate = await User.findByIdAndUpdate(id, body, {
+    const userToUpdate = await User.findByIdAndUpdate(id, body, {
       new: true,
       runValidator: true,
     });
-    if (userUpdate) {
-      res.status(200).json({
-        status: `success`,
-        data: {
-          user: userUpdate,
-        },
-      });
-    } else {
-      res.status(404).json({
-        status: `fail`,
-        message: `User with ID: ${req.params.id} not found`,
-      });
+
+    if (!userToUpdate) {
+      return next(new AppError(`User with 'id': ${id} not found`, 404));
     }
-  } catch (error: any) {
-    next(new HttpException(400, error.message));
+
+    res.status(200).json({
+      status: `success`,
+      data: {
+        user: userToUpdate,
+      },
+    });
   }
-};
+);
 
 /*
  * @route POST api/v1/users/id
@@ -104,14 +94,12 @@ const updateAuser = async (req: Request, res: Response, next: NextFunction) => {
  * @ascess private
  */
 
-const deleteAuser = async (req: Request, res: Response, next: NextFunction) => {
-  try {
+const deleteAuser = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
     const id = req.params.id;
     await User.findByIdAndRemove(id);
     res.status(204).json();
-  } catch (error: any) {
-    next(new HttpException(400, error.message));
   }
-};
+);
 
 export { getAllUser, getAuser, updateAuser, deleteAuser };

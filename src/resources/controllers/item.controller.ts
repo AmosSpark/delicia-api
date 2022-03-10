@@ -1,6 +1,7 @@
 import { Response, Request, NextFunction } from "express";
 
-import HttpException from "@/utils/exceptions/http.exception";
+import catchAsync from "@/utils/catch-async.utils";
+import AppError from "@/utils/app-error.utils";
 import Item from "@/resources/models/item.model";
 
 /*
@@ -9,9 +10,10 @@ import Item from "@/resources/models/item.model";
  * @ascess public
  */
 
-const getItems = async (req: Request, res: Response, next: NextFunction) => {
-  try {
+const getItems = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
     const items = await Item.find();
+
     return res.status(200).json({
       status: `success`,
       results: items.length,
@@ -19,10 +21,8 @@ const getItems = async (req: Request, res: Response, next: NextFunction) => {
         items,
       },
     });
-  } catch (error: any) {
-    next(new HttpException(400, error.message));
   }
-};
+);
 
 /*
  * @route GET api/v1/items/:id
@@ -30,20 +30,23 @@ const getItems = async (req: Request, res: Response, next: NextFunction) => {
  * @ascess public
  */
 
-const getAnItem = async (req: Request, res: Response, next: NextFunction) => {
-  try {
+const getAnItem = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
     const id = req.params.id;
     const item = await Item.findById(id).populate("reviews");
+
+    if (!item) {
+      return next(new AppError(`Item with 'id': ${id} not found`, 404));
+    }
+
     return res.status(200).json({
       status: `success`,
       data: {
         item,
       },
     });
-  } catch (error: any) {
-    next(new HttpException(400, error.message));
   }
-};
+);
 
 /*
  * @route POST api/v1/items
@@ -51,33 +54,24 @@ const getAnItem = async (req: Request, res: Response, next: NextFunction) => {
  * @ascess private
  */
 
-const postAnItem = async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    try {
-      const newItem = await Item.create({
-        name: req.body.name,
-        image: req.body.image,
-        description: req.body.description,
-        quantity: req.body.quantity,
-        unitPrice: req.body.unitPrice,
-      });
+const postAnItem = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const newItem = await Item.create({
+      name: req.body.name,
+      image: req.body.image,
+      description: req.body.description,
+      quantity: req.body.quantity,
+      unitPrice: req.body.unitPrice,
+    });
 
-      res.status(201).json({
-        status: `success`,
-        data: {
-          item: newItem,
-        },
-      });
-    } catch (error: any) {
-      res.status(400).json({
-        status: `fail`,
-        message: error.message,
-      });
-    }
-  } catch (error: any) {
-    next(new HttpException(400, error.message));
+    res.status(201).json({
+      status: `success`,
+      data: {
+        item: newItem,
+      },
+    });
   }
-};
+);
 
 /*
  * @route PATCH api/v1/items/:id
@@ -85,34 +79,28 @@ const postAnItem = async (req: Request, res: Response, next: NextFunction) => {
  * @ascess private
  */
 
-const updateAnItem = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {
-  try {
+const updateAnItem = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
     const id = req.params.id,
       body = req.body;
+
     const itemUpdate = await Item.findByIdAndUpdate(id, body, {
       new: true,
       runValidator: true,
     });
-    if (itemUpdate) {
-      res.status(200).json({
-        status: `success`,
-        data: {
-          item: itemUpdate,
-        },
-      });
-    } else {
-      res
-        .status(404)
-        .json({ message: `Item with ID: ${req.params.id} not found` });
+
+    if (!itemUpdate) {
+      return next(new AppError(`Item with 'id': ${id} not found`, 404));
     }
-  } catch (error: any) {
-    next(new HttpException(400, error.message));
+
+    res.status(200).json({
+      status: `success`,
+      data: {
+        item: itemUpdate,
+      },
+    });
   }
-};
+);
 
 /*
  * @route DELETE api/v1/items/:id
@@ -120,20 +108,13 @@ const updateAnItem = async (
  * @ascess private
  */
 
-const deleteAnItem = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {
-  try {
+const deleteAnItem = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
     const id = req.params.id;
     await Item.findByIdAndRemove(id);
     res.status(204).json();
-    next();
-  } catch (error: any) {
-    next(new HttpException(400, error.message));
   }
-};
+);
 
 /*
  * @route DELETE api/v1/items
@@ -141,14 +122,12 @@ const deleteAnItem = async (
  * @ascess private
  */
 
-const deleteAll = async (req: Request, res: Response, next: NextFunction) => {
-  try {
+const deleteAll = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
     await Item.deleteMany();
     res.status(204).json();
-  } catch (error: any) {
-    next(new HttpException(400, error.message));
   }
-};
+);
 
 export {
   getItems,

@@ -1,7 +1,8 @@
 import { Response, Request, NextFunction } from "express";
 
 import jwt from "jsonwebtoken";
-import HttpException from "@/utils/exceptions/http.exception";
+import catchAsync from "@/utils/catch-async.utils";
+import AppError from "@/utils/app-error.utils";
 import User from "@/resources/models/user.model";
 import Review from "@/resources/models/review.model";
 import * as dotenv from "dotenv";
@@ -14,11 +15,13 @@ dotenv.config();
  * @ascess private
  */
 
-const getReviews = async (req: Request, res: Response, next: NextFunction) => {
-  try {
+const getReviews = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
     let itemId = {};
     if (req.params.itemId) itemId = { item: req.params.itemId };
+
     const reveiws = await Review.find(itemId);
+
     return res.status(200).json({
       status: `success`,
       results: reveiws.length,
@@ -26,17 +29,18 @@ const getReviews = async (req: Request, res: Response, next: NextFunction) => {
         reveiws,
       },
     });
-  } catch (error: any) {
-    next(new HttpException(400, error.message));
   }
-};
+);
 
-const createReview = async (
-  req: Request | any,
-  res: Response,
-  next: NextFunction
-) => {
-  try {
+/*
+ * @route POST api/v1/reveiews
+ * @desc create a reveiw
+ * @ascess private
+ */
+
+const createReview = catchAsync(
+  async (req: Request | any, res: Response, next: NextFunction) => {
+    // get user
     const JWT_SECRET = String(process.env.JWT_SECRET);
     const token = req.headers.authorization.split(" ")[1];
     jwt.verify(token, JWT_SECRET, async (err: any, decoded: any) => {
@@ -59,18 +63,13 @@ const createReview = async (
             review: newReview,
           },
         });
-        next();
       } catch (error: any) {
-        res.status(400).json({
-          status: `fail`,
-          message: error.message,
-        });
+        return next(new AppError(error.message, 400));
       }
+      next();
     });
-  } catch (error: any) {
-    next(new HttpException(400, error.message));
   }
-};
+);
 
 /*
  * @route PATCH api/v1/reviews/:id
@@ -78,35 +77,27 @@ const createReview = async (
  * @ascess private
  */
 
-const updateReview = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {
-  try {
+const updateReview = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
     const id = req.params.id,
       body = req.body;
-    const reviewUpdate = await Review.findByIdAndUpdate(id, body, {
+    const reviewToUpdate = await Review.findByIdAndUpdate(id, body, {
       new: true,
       runValidator: true,
     }).clone();
-    if (reviewUpdate) {
-      res.status(200).json({
-        status: `success`,
-        data: {
-          reviewUpdate,
-        },
-      });
-    } else {
-      res.status(404).json({
-        status: `fail`,
-        message: `Review with ID: ${req.params.id} not found`,
-      });
+
+    if (!reviewToUpdate) {
+      return next(new AppError(`Review with 'id': ${id} not found`, 404));
     }
-  } catch (error: any) {
-    next(new HttpException(400, error.message));
+
+    res.status(200).json({
+      status: `success`,
+      data: {
+        reviewToUpdate,
+      },
+    });
   }
-};
+);
 
 /*
  * @route DELETE api/v1/reviews/:reviewId
@@ -114,18 +105,12 @@ const updateReview = async (
  * @ascess private
  */
 
-const deleteAreview = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {
-  try {
+const deleteAreview = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
     const id = req.params.id;
     await Review.findByIdAndRemove(id).clone();
     res.status(204).json();
-  } catch (error: any) {
-    next(new HttpException(400, error.message));
   }
-};
+);
 
 export { getReviews, createReview, updateReview, deleteAreview };

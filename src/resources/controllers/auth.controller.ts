@@ -1,11 +1,12 @@
-import byctypt from "bcrypt";
+import { Request, Response, NextFunction } from "express";
 
+import byctypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { createSendToken } from "@/middleware/token.middleware";
-import { Request, Response, NextFunction } from "express";
+import catchAsync from "@/utils/catch-async.utils";
+import AppError from "@/utils/app-error.utils";
 import User from "@/resources/models/user.model";
 import Login from "@/resources/interfaces/login.interface";
-import HttpException from "@/utils/exceptions/http.exception";
 import * as dotenv from "dotenv";
 
 dotenv.config();
@@ -16,39 +17,26 @@ dotenv.config();
  * @ascess public
  */
 
-const createNewUser = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {
-  try {
-    try {
-      // create user
-      const newUser = await User.create({
-        firstName: req.body.firstName,
-        lastName: req.body.lastName,
-        email: req.body.email,
-        password: req.body.password,
-        passwordConfirm: req.body.passwordConfirm,
-        phone: req.body.phone,
-        location: {
-          state: req.body.location.state,
-          town: req.body.location.town,
-          address: req.body.location.address,
-        },
-      });
+const createNewUser = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    // create user
+    const newUser = await User.create({
+      firstName: req.body.firstName,
+      lastName: req.body.lastName,
+      email: req.body.email,
+      password: req.body.password,
+      passwordConfirm: req.body.passwordConfirm,
+      phone: req.body.phone,
+      location: {
+        state: req.body.location.state,
+        town: req.body.location.town,
+        address: req.body.location.address,
+      },
+    });
 
-      createSendToken(newUser, 201, res);
-    } catch (error: any) {
-      res.status(400).json({
-        status: `fail`,
-        message: error.message,
-      });
-    }
-  } catch (error: any) {
-    next(new HttpException(400, error.message));
+    createSendToken(newUser, 201, res);
   }
-};
+);
 
 /*
  * @route POST /api/v1/login
@@ -56,15 +44,12 @@ const createNewUser = async (
  * @ascess public
  */
 
-const logUserIn = async (req: Request, res: Response, next: NextFunction) => {
-  try {
+const logUserIn = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
     const login: Login = req.body;
     // check if email || password is passed
     if (!login.email || !login.password) {
-      res.status(400).json({
-        status: `fail`,
-        message: `Please provide email and password`,
-      });
+      return next(new AppError(`Please provide email and password`, 400));
     }
 
     // check if user exist
@@ -74,30 +59,21 @@ const logUserIn = async (req: Request, res: Response, next: NextFunction) => {
 
     // comppare passwords
     if (!user || !(await byctypt.compare(login.password, user.password!))) {
-      res.status(401).json({
-        status: `fail`,
-        message: `Incorrect email or password`,
-      });
-    } else {
-      createSendToken(user, 200, res);
+      return next(new AppError(`Incorrect email or password`, 401));
     }
-  } catch (error: any) {
-    next(new HttpException(400, error.message));
+    createSendToken(user, 200, res);
   }
-};
+);
 
 /*
  * @desc protect private routes
  */
 
-const protectRoute = async (
-  req: Request | any,
-  res: Response,
-  next: NextFunction
-) => {
-  try {
+const protectRoute = catchAsync(
+  async (req: Request | any, res: Response, next: NextFunction) => {
     // check tokem / get token
     let token;
+
     if (
       req.headers.authorization &&
       req.headers.authorization.startsWith("Bearer")
@@ -106,10 +82,7 @@ const protectRoute = async (
     }
 
     if (!token) {
-      return res.status(401).json({
-        status: `fail`,
-        message: `Please login first`,
-      });
+      return next(new AppError(`Please login first`, 401));
     }
 
     // verify token
@@ -118,29 +91,21 @@ const protectRoute = async (
 
     jwt.verify(token, JWT_SECRET, async function (err: any, decoded: any) {
       if (err) {
-        return res.status(401).json({
-          status: `fail`,
-          message: `Unauthorized request, please login again`,
-        });
-      } else {
-        const freshUser = await User.findById(decoded.id);
-
-        if (!freshUser) {
-          return res.status(401).json({
-            status: `fail`,
-            message: `The user belonging to this token no loger exist`,
-          });
-        } else {
-          // GRANT USER ACCESS TO PROTECTED ROUTE
-          req.user = freshUser;
-        }
+        return next(
+          new AppError(`Unauthorized request: Please login again`, 401)
+        );
       }
+      const freshUser = await User.findById(decoded.id);
+
+      if (!freshUser) {
+        return next(new AppError(`This user no longer exist`, 401));
+      }
+      // GRANT USER ACCESS TO PROTECTED ROUTE
+      req.user = freshUser;
     });
 
     next();
-  } catch (error: any) {
-    next(new HttpException(400, error.message));
   }
-};
+);
 
 export { createNewUser, logUserIn, protectRoute };

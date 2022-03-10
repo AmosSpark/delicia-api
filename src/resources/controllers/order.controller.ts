@@ -1,11 +1,12 @@
 import { Request, Response, NextFunction } from "express";
 
 import jwt from "jsonwebtoken";
+import catchAsync from "@/utils/catch-async.utils";
+import AppError from "@/utils/app-error.utils";
 import Order from "@/resources/models/order.model";
 import User from "@/resources/models/user.model";
-import HttpException from "@/utils/exceptions/http.exception";
+import Item from "@/resources/models/item.model";
 import * as dotenv from "dotenv";
-import itemModel from "../models/item.model";
 
 dotenv.config();
 
@@ -15,9 +16,10 @@ dotenv.config();
  * @ascess private
  */
 
-const getOrders = async (req: Request, res: Response, next: NextFunction) => {
-  try {
+const getOrders = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
     const orders = await Order.find();
+
     return res.status(200).json({
       status: `success`,
       result: orders.length,
@@ -25,10 +27,8 @@ const getOrders = async (req: Request, res: Response, next: NextFunction) => {
         orders,
       },
     });
-  } catch (error: any) {
-    next(new HttpException(400, error.message));
   }
-};
+);
 
 /*
  * @route POST /api/v1/items/:itemId/orders
@@ -36,14 +36,12 @@ const getOrders = async (req: Request, res: Response, next: NextFunction) => {
  * @ascess private
  */
 
-const makeAnOrder = async (
-  req: Request | any,
-  res: Response,
-  next: NextFunction
-) => {
-  try {
+const makeAnOrder = catchAsync(
+  async (req: Request | any, res: Response, next: NextFunction) => {
+    // get user
     const JWT_SECRET = String(process.env.JWT_SECRET);
     const token = req.headers.authorization.split(" ")[1];
+
     jwt.verify(token, JWT_SECRET, async (err: any, decoded: any) => {
       if (err) return err;
       const user = await User.findById(decoded.id);
@@ -57,24 +55,26 @@ const makeAnOrder = async (
           item: req.params.id,
         });
 
+        if (!(await Item.findById(req.params.id))) {
+          return next(
+            new AppError(`Item with 'id': ${req.params.id} not found`, 404)
+          );
+        }
+
         res.status(201).json({
           status: `success`,
           data: {
             order: newOrder,
           },
         });
-        next();
       } catch (error: any) {
-        res.status(400).json({
-          status: `fail`,
-          message: error.message,
-        });
+        return next(new AppError(error.message, 400));
       }
+
+      next();
     });
-  } catch (error: any) {
-    next(new HttpException(400, error.message));
   }
-};
+);
 
 /*
  * @route GET api/v1/orders/:id
@@ -82,20 +82,23 @@ const makeAnOrder = async (
  * @ascess private
  */
 
-const getAnOrder = async (req: Request, res: Response, next: NextFunction) => {
-  try {
+const getAnOrder = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
     const id = req.params.id;
     const order = await Order.findById(id);
+
+    if (!order) {
+      return next(new AppError(`order with 'id': ${id} not found`, 404));
+    }
+
     return res.status(200).json({
       status: `success`,
       data: {
         order,
       },
     });
-  } catch (error: any) {
-    next(new HttpException(400, error.message));
   }
-};
+);
 
 /*
  * @route DELETE api/v1/orders/:id
@@ -103,18 +106,12 @@ const getAnOrder = async (req: Request, res: Response, next: NextFunction) => {
  * @ascess private
  */
 
-const deleteAnOrder = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {
-  try {
+const deleteAnOrder = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
     const id = req.params.id;
     await Order.findByIdAndRemove(id);
     res.status(204).json();
-  } catch (error: any) {
-    next(new HttpException(400, error.message));
   }
-};
+);
 
 export { getOrders, makeAnOrder, getAnOrder, deleteAnOrder };
