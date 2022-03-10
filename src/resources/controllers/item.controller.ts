@@ -58,6 +58,7 @@ const postAnItem = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const newItem = await Item.create({
       name: req.body.name,
+      category: req.body.category,
       image: req.body.image,
       description: req.body.description,
       quantity: req.body.quantity,
@@ -129,6 +130,26 @@ const deleteAll = catchAsync(
   }
 );
 
+/*
+ * @route GET api/v1/items/stats
+ * @desc get item statistics
+ * @ascess private
+ */
+
+const getItemStats = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const stats = await Item.calcItemStats();
+
+    res.status(200).json({
+      status: `success`,
+      results: stats.length,
+      data: {
+        stats,
+      },
+    });
+  }
+);
+
 export {
   getItems,
   getAnItem,
@@ -136,4 +157,5 @@ export {
   updateAnItem,
   deleteAnItem,
   deleteAll,
+  getItemStats,
 };

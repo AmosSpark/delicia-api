@@ -54,4 +54,60 @@ ReviewSchema.pre(/^find/, function (next: Function) {
   next();
 });
 
+// Average Rating
+
+/*
+ * @desc calculate avg. rating of an Item when
+ * 'api/v1/items/Id' is queried
+ */
+
+// 1- calculate avg. rating of an Item - when a new review is submitted
+
+ReviewSchema.statics.calcAverageRatings = async function (itemId) {
+  const stats = await this.aggregate([
+    {
+      $match: { item: itemId },
+    },
+    {
+      $group: {
+        _id: "item",
+        nRating: { $sum: 1 },
+        avgRating: { $avg: "$rating" },
+      },
+    },
+  ]);
+
+  if (stats.length > 0) {
+    // update Item
+    await Item.findByIdAndUpdate(itemId, {
+      ratingsQuantity: stats[0].nRating,
+      averageRating: stats[0].avgRating,
+    });
+  } else {
+    // set to default
+    await Item.findByIdAndUpdate(itemId, {
+      ratingsQuantity: 0,
+      averageRating: 4.5,
+    });
+  }
+};
+
+ReviewSchema.post("save", function () {
+  // points to current reveiw
+  this.constructor.calcAverageRatings(this.item); // this.constructor = Model (Review)
+});
+
+// 2- calculate avg. rating of an Item - when a review is updated
+
+ReviewSchema.pre(/^findOneAnd/, async function (next) {
+  // points to query of reveiw
+  this.rev = await this.findOne();
+  next();
+});
+
+ReviewSchema.post(/^findOneAnd/, async function () {
+  // when query executes
+  await this.constructor.calcAverageRatings(this.rev.item);
+});
+
 export default model<Review>("Review", ReviewSchema);

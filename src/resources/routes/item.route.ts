@@ -7,6 +7,7 @@ import {
   updateAnItem,
   deleteAnItem,
   deleteAll,
+  getItemStats,
 } from "@/resources/controllers/item.controller";
 
 import { ordersRouter } from "@/resources/routes/order.route";
@@ -14,6 +15,8 @@ import { reviewsRouter } from "@/resources/routes/review.route";
 import { protectRoute } from "@/resources/controllers/auth.controller";
 
 const itemsRouter = Router() as Express;
+
+itemsRouter.route("/stats").get(protectRoute, getItemStats);
 
 itemsRouter
   .route("/")
