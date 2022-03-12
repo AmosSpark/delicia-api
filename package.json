@@ -17,7 +17,6 @@
   "dependencies": {
     "@types/bcrypt": "^5.0.0",
     "@types/express-mongo-sanitize": "^2.1.0",
-    "@types/joi": "^17.2.3",
     "@types/jsonwebtoken": "^8.5.8",
     "@types/validator": "^13.7.1",
     "bcrypt": "^5.0.1",
@@ -28,7 +27,6 @@
     "express": "^4.17.2",
     "express-mongo-sanitize": "^2.2.0",
     "helmet": "^5.0.2",
-    "joi": "^17.6.0",
     "jsonwebtoken": "^8.5.1",
     "module-alias": "^2.2.2",
     "mongoose": "^6.2.1",

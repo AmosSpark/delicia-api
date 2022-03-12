@@ -9,6 +9,7 @@ const ItemSchema: Schema = new Schema(
       required: true,
       minlength: 2,
       maxlength: 50,
+      unique: true,
     },
     image: {
       type: String,
@@ -53,12 +54,5 @@ const ItemSchema: Schema = new Schema(
 // Avoid duplicate item
 
 ItemSchema.index({ name: 1, description: 1 }, { unique: true });
-
-// Virtual Population
-ItemSchema.virtual("reviews", {
-  ref: "Review",
-  foreignField: "item",
-  localField: "_id",
-});
 
 export default model<Item>("Item", ItemSchema);
