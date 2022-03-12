@@ -90,3 +90,5 @@ const globalError = (
     if (error.code === 2) error = handleDDBadRequestValue(error);
   }
 };
+
+export default globalError;
