@@ -2,6 +2,7 @@ import { Router, Express } from "express";
 
 import {
   getItems,
+  getTop5Items,
   getAnItem,
   postAnItem,
   updateAnItem,
@@ -20,6 +21,8 @@ itemsRouter
   .get(getItems)
   .post(protectRoute, postAnItem)
   .delete(protectRoute, deleteAll);
+
+itemsRouter.route("/top-5-items").get(getTop5Items, getItems);
 
 itemsRouter
   .route("/:id")
