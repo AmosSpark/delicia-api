@@ -36,6 +36,11 @@ const handleDBValidationError = (error: any) => {
   return new AppError(message, 400);
 };
 
+// database query/request value error
+const handleDDBadRequestValue = (error: any) => {
+  return new AppError(error.message, 400);
+};
+
 // development response
 const sendErrDev = (error: any, res: Response) => {
   res.status(error.statusCode).json({
@@ -82,9 +87,6 @@ const globalError = (
     if (error.code === 11000) error = handleDBDuplicateFields(error);
     if (error.name === "ValidationError")
       error = handleDBValidationError(error);
-
-    sendErrProd(error, res);
+    if (error.code === 2) error = handleDDBadRequestValue(error);
   }
 };
-
-export default globalError;

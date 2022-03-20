@@ -2,6 +2,7 @@ import { Response, Request, NextFunction } from "express";
 
 import catchAsync from "@/utils/catch-async.utils";
 import AppError from "@/utils/app-error.utils";
+import QueryFeatures from "@/utils/query.features";
 import Item from "@/resources/models/item.model";
 
 /*
@@ -12,15 +13,39 @@ import Item from "@/resources/models/item.model";
 
 const getItems = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const items = await Item.find();
+    // Execute query
+    const queryFeatures = new QueryFeatures(Item.find(), req.query)
+      .filter()
+      .sort()
+      .limitFileds()
+      .paginate();
+
+    const items = await queryFeatures.query;
 
     return res.status(200).json({
       status: `success`,
       results: items.length,
+      totalDoc: await Item.countDocuments(),
       data: {
         items,
       },
     });
+  }
+);
+
+/*
+ * @route GET api/v1/top-5-items
+ * @desc get all item
+ * @ascess public
+ */
+
+const getTop5Items = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    req.query.limit = "5";
+    // sort by averagere rating (descending) & price
+    req.query.sort = "-averageRating, unitPrice";
+    req.query.fields = "name, image, description, averageRating, unitPrice";
+    next();
   }
 );
 
@@ -131,6 +156,7 @@ const deleteAll = catchAsync(
 
 export {
   getItems,
+  getTop5Items,
   getAnItem,
   postAnItem,
   updateAnItem,
